@@ -69,7 +69,7 @@ struct RosettaView: View {
                         installing = true
                         successful = true
 
-                        Task.detached {
+                        Task {
                             await checkOrInstall()
                         }
                     }
@@ -79,21 +79,23 @@ struct RosettaView: View {
         }
         .frame(width: 400, height: 200)
         .onAppear {
-            Task.detached {
+            Task {
                 await checkOrInstall()
             }
         }
     }
 
+    @MainActor
     func checkOrInstall() async {
         if Rosetta2.isRosettaInstalled {
             installing = false
-            sleep(2)
+            try? await Task.sleep(for: .seconds(2))
             proceed()
         } else {
             do {
                 successful = try await Rosetta2.installRosetta()
                 installing = false
+                guard successful else { return }
                 try await Task.sleep(for: .seconds(2))
                 proceed()
             } catch {

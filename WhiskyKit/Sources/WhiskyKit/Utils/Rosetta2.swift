@@ -20,17 +20,35 @@ import Foundation
 import os.log
 
 public class Rosetta2 {
-    private static let rosetta2RuntimeBin = "/Library/Apple/usr/libexec/oah/libRosettaRuntime"
+    /// Probe actual x86_64 execution instead of depending on Apple's private runtime path.
+    /// Re-evaluate after installation; a cached result stays false until the app restarts.
+    public static var isRosettaInstalled: Bool {
+        canRunIntelCode()
+    }
 
-    public static let isRosettaInstalled: Bool = {
-        return FileManager.default.fileExists(atPath: rosetta2RuntimeBin)
-    }()
+    static func canRunIntelCode(
+        executableURL: URL = URL(fileURLWithPath: "/usr/bin/arch"),
+        arguments: [String] = ["-x86_64", "/usr/bin/true"]
+    ) -> Bool {
+        let process = Process()
+        process.executableURL = executableURL
+        process.arguments = arguments
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        do {
+            try process.run()
+            process.waitUntilExit()
+            return process.terminationReason == .exit && process.terminationStatus == 0
+        } catch {
+            return false
+        }
+    }
 
     public static func installRosetta() async throws -> Bool {
         let process = Process()
         let fileHandle = try Wine.makeFileHandle()
 
-        process.launchPath = "/usr/sbin/softwareupdate"
+        process.executableURL = URL(fileURLWithPath: "/usr/sbin/softwareupdate")
         process.arguments = ["--install-rosetta", "--agree-to-license"]
         process.standardOutput = fileHandle
         process.standardError = fileHandle
@@ -41,7 +59,7 @@ public class Rosetta2 {
             process.terminationHandler = { (process: Process) in
                 do {
                     try fileHandle.close()
-                    continuation.resume(returning: process.terminationStatus == 0)
+                    continuation.resume(returning: process.terminationStatus == 0 && isRosettaInstalled)
                 } catch {
                     Logger.wineKit.error("Error while closing file handle: \(error)")
                     continuation.resume(throwing: error)
@@ -51,6 +69,7 @@ public class Rosetta2 {
             do {
                 try process.run()
             } catch {
+                try? fileHandle.close()
                 continuation.resume(throwing: error)
             }
         }

@@ -7,6 +7,12 @@
   [![](https://img.shields.io/discord/1115955071549702235?style=for-the-badge)](https://discord.gg/CsqAfs9CnM)
 </div>
 
+## Development fork: macOS compatibility
+
+This working branch prepares compatibility updates for macOS Sonoma 14 and later.
+It is not yet a validated release; the Wine engine remains unchanged. See
+[build instructions and validation status](docs/MACOS-COMPATIBILITY.md).
+
 ## Maintenance Notice
 
 [Whisky is no longer actively maintained](https://docs.getwhisky.app/maintenance-notice). Apps and games may break at any time.
