@@ -4,6 +4,9 @@ opt_in_rules:
 
 excluded:
   - .build
+  - WhiskyKit/.build
+  - build
+  - DerivedData
 
 file_header:
     severity: error
